@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import functools
 import optparse
 import socket
 import thread
@@ -7,6 +8,17 @@ import threading
 import time
 
 
+def nonblocking(func):
+    """
+    Decorator that runs the decorated func in a separate thread 
+    when called.
+    """
+    @functools.wraps(func)
+    def wrapper(*args):
+        thread.start_new_thread(func, args)
+    return wrapper
+
+    
 class StoppableThread(threading.Thread):
     """
     Thread class that runs a main() method until the stop() method 
@@ -116,6 +128,7 @@ class Server(StoppableThread):
         for conn in self.users.values():
             conn.close()
             
+    @nonblocking
     def accept(self, conn):
         """
         Call the inner func in a thread so as not to block. Wait for a 
@@ -123,24 +136,22 @@ class Server(StoppableThread):
         entered, set the connection to non-blocking and add the user to 
         the users dict.
         """
-        def threaded():
-            while True:
-                conn.send("Please enter your name: ")
-                try:
-                    name = conn.recv(1024).strip()
-                except socket.error:
-                    continue
-                if name in self.users.keys():
-                    conn.send("Name entered is already in use.\n")
-                elif name:
-                    conn.setblocking(False)
-                    self.users[name] = conn
-                    conn.send("Welcome %s!\n" % name)
-                    self.list_commands(conn)
-                    self.list_users(conn)
-                    self.broadcast(name, action="joins")
-                    break
-        thread.start_new_thread(threaded, ())
+        while True:
+            conn.send("Please enter your name: ")
+            try:
+                name = conn.recv(1024).strip()
+            except socket.error:
+                continue
+            if name in self.users.keys():
+                conn.send("Name entered is already in use.\n")
+            elif name:
+                conn.setblocking(False)
+                self.users[name] = conn
+                conn.send("Welcome %s!\n" % name)
+                self.list_commands(conn)
+                self.list_users(conn)
+                self.broadcast(name, action="joins")
+                break
 
     def broadcast(self, name="", message=None, action=None):
         """
@@ -191,6 +202,7 @@ def client(host, port, name):
     client.setblocking(False)
     # Reading console input and sending to the server must run 
     # in a separate thread so as not to block.
+    @nonblocking
     def handle_input():
         while True:
             client.send(raw_input())
@@ -217,7 +229,7 @@ def client(host, port, name):
                     # Set the username on first response.
                     name_sent = True
                     client.send(name)
-                    thread.start_new_thread(handle_input, ())
+                    handle_input()
                 else:
                     print message
             except socket.error:
