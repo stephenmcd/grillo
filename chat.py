@@ -216,8 +216,7 @@ class Client(StoppableThread):
                 if connect_retries > 0:
                     time.sleep(1)
                 else:
-                    address = self.socket.getsockname()
-                    print "Couldn't connect to %s:%s" % address
+                    print "Couldn't connect to %s:%s" % (host, port)
                     return
 
     def main(self):
@@ -226,17 +225,21 @@ class Client(StoppableThread):
         On first response, send the specified username.
         """
         try:
-            message = self.socket.recv(1024).strip()
+            message = self.socket.recv(1024)
         except socket.error:
             time.sleep(.1)
         else:
-            if not self.name_sent:
-                # Set the username on first response.
-                self.name_sent = True
-                self.socket.send(self.name)
-                self.handle_input()
+            if not message:
+                self.stop()
             else:
-                print message
+                message = message.strip()
+                if not self.name_sent:
+                    # Set the username on first response.
+                    self.name_sent = True
+                    self.socket.send(self.name)
+                    self.handle_input()
+                else:
+                    print message
         # Handle disconnection.
         try:
             self.socket.send("")
@@ -265,9 +268,15 @@ class Client(StoppableThread):
 if __name__ == "__main__":
 
     # Get host and port from command line arg.
-    parser = optparse.OptionParser(usage="usage: %prog -b host:port")
+    parser = optparse.OptionParser(usage="usage: %prog [options]")
     parser.add_option("-b", "--bind", dest="bind", help="Address for the "
                       "chat server to, in the format host:port")
+    parser.add_option("-c", "--client-only", dest="client_only", 
+                      action="store_true", default=False, 
+                      help="Only run the client")
+    parser.add_option("-s", "--server-only", dest="server_only", 
+                      action="store_true", default=False, 
+                      help="Only run the server")
     options, args = parser.parse_args()
     try:
         host, port = options.bind.split(":")
@@ -276,19 +285,27 @@ if __name__ == "__main__":
         parser.error("Address not specified")
     except ValueError:
         parser.error("Address not in the format host:port")
+    if options.client_only and options.server_only:
+        parser.error("Cannot specify client-only and server-only")
 
     # Run server and client.
-    server = Server(host, port)
-    server.start()
-    print "Listening on %s:%s" % server.socket.getsockname()
-    time.sleep(1)
-    name = raw_input("Please enter your name: ")
-    client = Client(host, port, name)
-    client.start()
+    if not options.client_only:
+        server = Server(host, port)
+        server.start()
+        print "Listening on %s:%s" % server.socket.getsockname()
+        if not options.server_only:
+            time.sleep(1)
+    if not options.server_only:
+        name = raw_input("Please enter your name: ")
+        client = Client(host, port, name)
+        client.start()
+
     while True:
         try:
             time.sleep(.1)
         except (SystemExit, KeyboardInterrupt):
             break
-    client.stop()
-    server.stop()
+    if not options.server_only:
+        client.stop()
+    if not options.client_only:
+        server.stop()
