@@ -48,23 +48,24 @@ class Server(StoppableThread):
     Chat server.
     """
     
-    def __init__(self, host, port):
+    def __init__(self, host, port, shutdown_delay=5):
         """
         Set up the server socket.
         """
-        self.commands = {
-            "!quit": "quit",
-            "!users": "list_users",
-            "!commands": "list_commands",
-        }
-        self.users = {}
+        super(Server, self).__init__()
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.server.setblocking(False)
         self.server.bind((host, port))
         self.server.listen(1)
         print "Listening on %s:%s" % self.server.getsockname()
-        super(Server, self).__init__()
+        self.shutdown_delay = shutdown_delay
+        self.users = {}
+        self.commands = {
+            "!quit": "quit",
+            "!users": "list_users",
+            "!commands": "list_commands",
+        }
 
     def main(self):
         """
@@ -103,14 +104,15 @@ class Server(StoppableThread):
             except socket.error:
                 del self.users[name]
                 self.broadcast(name, action="leaves")
-        time.sleep(.1)
     
     def end(self):
         """
         Send a shutdown message to all users and close their 
         connections.
         """
-        self.broadcast(action="shutting down")
+        message = "shutting down in %s seconds" % self.shutdown_delay
+        self.broadcast(action=message)
+        time.sleep(self.shutdown_delay)
         for conn in self.users.values():
             conn.close()
             
