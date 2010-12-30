@@ -265,9 +265,13 @@ class Client(StoppableThread):
                 break
 
 
-if __name__ == "__main__":
+def main():
+    """
+    Start client and/or server based on command line options 
+    and run them until exit.
+    """
 
-    # Get host and port from command line arg.
+    # Get command line options.
     parser = optparse.OptionParser(usage="usage: %prog [options]")
     parser.add_option("-b", "--bind", dest="bind", help="Address for the "
                       "chat server to, in the format host:port")
@@ -300,6 +304,7 @@ if __name__ == "__main__":
         client = Client(host, port, name)
         client.start()
 
+    # Wait for exit.
     while True:
         try:
             time.sleep(.1)
@@ -309,3 +314,7 @@ if __name__ == "__main__":
         client.stop()
     if not options.client_only:
         server.stop()
+
+
+if __name__ == "__main__":
+    main()
