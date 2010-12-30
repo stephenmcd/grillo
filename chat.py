@@ -40,10 +40,11 @@ def broadcast(name="", message=None, action=None):
     is given, use the action as the message without a colon prefix to 
     signify it isn't a message.
     """
+    timestamp = time.strftime("[%I:%M:%S]")
     if message is None:
-        message = "%s %s" % (name, action)
+        message = "%s %s %s" % (timestamp, name, action)
     else:
-        message = "%s: %s" % (name, message)
+        message = "%s %s: %s" % (timestamp, name, message)
     print message
     for to_name, conn in users.items():
         if to_name != name:
