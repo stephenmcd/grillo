@@ -1,12 +1,9 @@
 #!/usr/bin/env python
 
+import optparse
 import socket
 import thread
 import time
-
-
-HOST = ""
-PORT = 4004
 
 
 def accept(conn):
@@ -53,12 +50,23 @@ def broadcast(name="", message=None, action=None):
             except socket.error:
                 pass
 
+parser = optparse.OptionParser(usage="usage: %prog -b host:port")
+parser.add_option("-b", "--bind", dest="bind", help="Address for the "
+                  "chat server to, in the format host:port")
+options, args = parser.parse_args()
+try:
+    host, port = options.bind.split(":")
+    port = int(port)
+except AttributeError:
+    parser.error("Address not specified")
+except ValueError:
+    parser.error("Address not in the format host:port")
 
 # Set up the server socket.
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 server.setblocking(False)
-server.bind((HOST, PORT))
+server.bind((host, port))
 server.listen(1)
 print "Listening on %s" % ("%s:%s" % server.getsockname())
 
