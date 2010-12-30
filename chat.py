@@ -27,7 +27,7 @@ def accept(conn):
                 users[name] = conn
                 broadcast(name, action="joins")
                 break
-    thread.start_new_thread(threaded)
+    thread.start_new_thread(threaded, ())
 
 
 def broadcast(name="", message=None, action=None):
