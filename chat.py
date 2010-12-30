@@ -55,6 +55,7 @@ class StoppableThread(threading.Thread):
             time.sleep(.1)
         self.end()
 
+
 class Server(StoppableThread):
     """
     Chat server.
@@ -192,58 +193,77 @@ class Server(StoppableThread):
         conn.send("Available commands are: %s\n" % " ".join(commands))
 
 
-def client(host, port, name):
+class Client(StoppableThread):
     """
-    Connects to the given host and port and joins the chat with the 
-    given username.
+    Chat client.
     """
-    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client.setblocking(False)
-    # Reading console input and sending to the server must run 
-    # in a separate thread so as not to block.
-    @nonblocking
-    def handle_input():
+    
+    def __init__(self, host, port, name, connect_retries=10):
+        """
+        Set up the client socket and connect to the server..
+        """
+        super(Client, self).__init__()
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.setblocking(False)
+        self.name = name
+        self.name_sent = False
         while True:
-            client.send(raw_input())
-    # Connect to the server.
-    retries = 10
-    while True:
-        try:
-            client.connect((host, port))
-            break
-        except socket.error:
-            retries -= 1
-            if retries > 0:
-                time.sleep(1)
-            else:
-                print "Couldn't connect to %s:%s" % client.getsockname()
-                return
-    # Read from connection.
-    name_sent = False
-    while True:
-        try:
             try:
-                message = client.recv(1024).strip()
-                if not name_sent:
-                    # Set the username on first response.
-                    name_sent = True
-                    client.send(name)
-                    handle_input()
-                else:
-                    print message
-            except socket.error:
-                time.sleep(.1)
-            # Handle disconnection.
-            try:
-                client.send("")
-            except socket.error:
+                self.socket.connect((host, port))
                 break
-        except (SystemExit, KeyboardInterrupt):
-            break
-    client.close()
+            except socket.error:
+                connect_retries -= 1
+                if connect_retries > 0:
+                    time.sleep(1)
+                else:
+                    address = self.socket.getsockname()
+                    print "Couldn't connect to %s:%s" % address
+                    return
+
+    def main(self):
+        """
+        Main event loop iteration - read responses from the server. 
+        On first response, send the specified username.
+        """
+        try:
+            message = self.socket.recv(1024).strip()
+        except socket.error:
+            time.sleep(.1)
+        else:
+            if not self.name_sent:
+                # Set the username on first response.
+                self.name_sent = True
+                self.socket.send(self.name)
+                self.handle_input()
+            else:
+                print message
+        # Handle disconnection.
+        try:
+            self.socket.send("")
+        except socket.error:
+            self.stop()
+
+    def end(self):
+        """
+        Close socket on end.
+        """
+        self.socket.close()
+
+    @nonblocking
+    def handle_input(self):
+        """
+        Reads input from the terminal and sends it as a message.
+        """
+        while True:
+            try:
+                self.socket.send(raw_input())
+            except socket.error:
+                # Connection closed.
+                break
 
 
 if __name__ == "__main__":
+
     # Get host and port from command line arg.
     parser = optparse.OptionParser(usage="usage: %prog -b host:port")
     parser.add_option("-b", "--bind", dest="bind", help="Address for the "
@@ -256,10 +276,19 @@ if __name__ == "__main__":
         parser.error("Address not specified")
     except ValueError:
         parser.error("Address not in the format host:port")
-    # Run server.
+
+    # Run server and client.
     server = Server(host, port)
     server.start()
     print "Listening on %s:%s" % server.socket.getsockname()
     time.sleep(1)
-    client(host, port, raw_input("Please enter your name: "))
+    name = raw_input("Please enter your name: ")
+    client = Client(host, port, name)
+    client.start()
+    while True:
+        try:
+            time.sleep(.1)
+        except (SystemExit, KeyboardInterrupt):
+            break
+    client.stop()
     server.stop()
