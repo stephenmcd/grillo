@@ -32,6 +32,7 @@ def accept(conn):
                 break
     thread.start_new_thread(threaded, ())
 
+
 def broadcast(name="", message=None, action=None):
     """
     Send a message to all users from the given name. If no name specified, 
@@ -52,11 +53,13 @@ def broadcast(name="", message=None, action=None):
             except socket.error:
                 pass
 
+
 def quit(conn):
     """
     Disconnect a connection.
     """
     conn.close()
+
 
 def list_users(conn):
     """
@@ -64,78 +67,89 @@ def list_users(conn):
     """
     conn.send("Current users are: %s\n" % ", ".join(users.keys()))
 
+
 def list_commands(conn):
     """
     Send the list of commands to a connection.
     """
     conn.send("Available commands are: %s\n" % " ".join(commands.keys()))
 
-# Get host and port from command line arg.
-parser = optparse.OptionParser(usage="usage: %prog -b host:port")
-parser.add_option("-b", "--bind", dest="bind", help="Address for the "
-                  "chat server to, in the format host:port")
-options, args = parser.parse_args()
-try:
-    host, port = options.bind.split(":")
-    port = int(port)
-except AttributeError:
-    parser.error("Address not specified")
-except ValueError:
-    parser.error("Address not in the format host:port")
 
-# Mapping of commands.
+def serve(host, port):
+    """
+    Main function - set up server socket and run main event loop.
+    """
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    server.setblocking(False)
+    server.bind((host, port))
+    server.listen(1)
+    print "Listening on %s" % ("%s:%s" % server.getsockname())
+    # Main event loop.
+    while True:
+        try:
+            # Accept new connections.
+            while True:
+                try:
+                    conn, addr = server.accept()
+                except socket.error:
+                    break
+                accept(conn)
+            # Read from connections.
+            for name, conn in users.items():
+                try:
+                    message = conn.recv(1024)
+                except socket.error:
+                    continue
+                if not message:
+                    # Empty string is given on disconnect, close connection.
+                    conn.close()
+                else:
+                    # Handle command if given, otherwise broadcast message.
+                    message = message.strip()
+                    try:
+                        command = commands[message]
+                    except KeyError:
+                        broadcast(name, message)
+                    else:
+                        command(conn)
+                # Check for disconnected users and remove them.
+                try:
+                    conn.send("")
+                except socket.error:
+                    del users[name]
+                    broadcast(name, action="leaves")
+            time.sleep(.1)
+        except (SystemExit, KeyboardInterrupt):
+            broadcast(action="shutting down")
+            for conn in users.values():
+                conn.close()
+            break
+
+
+# user name/connection mapping for all users.
+users = {}
+
+# command name/handler mapping for commands.
 commands = {
     "!quit": quit,
     "!users": list_users,
     "!commands": list_commands,
 }
 
-# Set up the server socket.
-server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-server.setblocking(False)
-server.bind((host, port))
-server.listen(1)
-print "Listening on %s" % ("%s:%s" % server.getsockname())
 
-# Main event loop.
-users = {}
-while True:
+if __name__ == "__main__":
+    # Get host and port from command line arg.
+    parser = optparse.OptionParser(usage="usage: %prog -b host:port")
+    parser.add_option("-b", "--bind", dest="bind", help="Address for the "
+                      "chat server to, in the format host:port")
+    options, args = parser.parse_args()
     try:
-        # Accept new connections.
-        while True:
-            try:
-                conn, addr = server.accept()
-            except socket.error:
-                break
-            accept(conn)
-        # Read from connections.
-        for name, conn in users.items():
-            try:
-                message = conn.recv(1024)
-            except socket.error:
-                continue
-            if not message:
-                # Empty string is given on disconnect, close connection.
-                conn.close()
-            else:
-                # Handle command if given, otherwise broadcast message.
-                message = message.strip()
-                try:
-                    command = commands[message]
-                except KeyError:
-                    broadcast(name, message)
-                else:
-                    command(conn)
-            # Check for disconnected users and remove them.
-            try:
-                conn.send("")
-            except socket.error:
-                del users[name]
-                broadcast(name, action="leaves")
-        time.sleep(.1)
-    except (SystemExit, KeyboardInterrupt):
-        broadcast(action="shutting down")
-        for conn in users.values():
-            conn.close()
-        break
+        host, port = options.bind.split(":")
+        port = int(port)
+    except AttributeError:
+        parser.error("Address not specified")
+    except ValueError:
+        parser.error("Address not in the format host:port")
+    # Run server.
+    serve(host, port)
