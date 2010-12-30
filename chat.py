@@ -65,12 +65,11 @@ class Server(StoppableThread):
         Set up the server socket.
         """
         super(Server, self).__init__()
-        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.server.setblocking(False)
-        self.server.bind((host, port))
-        self.server.listen(1)
-        print "Listening on %s:%s" % self.server.getsockname()
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.socket.setblocking(False)
+        self.socket.bind((host, port))
+        self.socket.listen(1)
         self.shutdown_delay = shutdown_delay
         self.users = {}
         self.commands = {
@@ -86,7 +85,7 @@ class Server(StoppableThread):
         # Accept new connections.
         while True:
             try:
-                conn, addr = self.server.accept()
+                conn, addr = self.socket.accept()
             except socket.error:
                 break
             self.accept(conn)
@@ -260,6 +259,7 @@ if __name__ == "__main__":
     # Run server.
     server = Server(host, port)
     server.start()
+    print "Listening on %s:%s" % server.socket.getsockname()
     time.sleep(1)
     client(host, port, raw_input("Please enter your name: "))
     server.stop()
