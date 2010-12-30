@@ -88,4 +88,6 @@ while True:
         time.sleep(.1)
     except (SystemExit, KeyboardInterrupt):
         broadcast(action="shutting down")
+        for conn in users.values():
+            conn.close()
         break
