@@ -25,6 +25,7 @@ def accept(conn):
             elif name:
                 conn.setblocking(False)
                 users[name] = conn
+                conn.send("Welcome %s!\n" % name)
                 list_commands(conn)
                 list_users(conn)
                 broadcast(name, action="joins")
