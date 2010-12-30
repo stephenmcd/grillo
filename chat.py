@@ -50,6 +50,7 @@ def broadcast(name="", message=None, action=None):
             except socket.error:
                 pass
 
+# Get host and port from command line arg.
 parser = optparse.OptionParser(usage="usage: %prog -b host:port")
 parser.add_option("-b", "--bind", dest="bind", help="Address for the "
                   "chat server to, in the format host:port")
@@ -61,6 +62,11 @@ except AttributeError:
     parser.error("Address not specified")
 except ValueError:
     parser.error("Address not in the format host:port")
+
+# Mapping of commands.
+commands = {
+    "!quit": lambda conn: conn.close(),
+}
 
 # Set up the server socket.
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -92,7 +98,14 @@ while True:
                 del users[name]
                 broadcast(name, action="leaves")
             else:
-                broadcast(name, message.strip())
+                # Handle command if given, otherwise broadcast message.
+                message = message.strip()
+                try:
+                    command = commands[message]
+                except KeyError:
+                    broadcast(name, message)
+                else:
+                    command(conn)
         time.sleep(.1)
     except (SystemExit, KeyboardInterrupt):
         broadcast(action="shutting down")
