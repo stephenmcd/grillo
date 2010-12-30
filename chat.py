@@ -94,9 +94,8 @@ while True:
             except socket.error:
                 continue
             if not message:
-                # Empty string is given on disconnect.
-                del users[name]
-                broadcast(name, action="leaves")
+                # Empty string is given on disconnect, close connection.
+                conn.close()
             else:
                 # Handle command if given, otherwise broadcast message.
                 message = message.strip()
@@ -106,6 +105,12 @@ while True:
                     broadcast(name, message)
                 else:
                     command(conn)
+            # Check for disconnected users and remove them.
+            try:
+                conn.send("")
+            except socket.error:
+                del users[name]
+                broadcast(name, action="leaves")
         time.sleep(.1)
     except (SystemExit, KeyboardInterrupt):
         broadcast(action="shutting down")
