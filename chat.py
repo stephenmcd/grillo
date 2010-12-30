@@ -25,10 +25,11 @@ def accept(conn):
             elif name:
                 conn.setblocking(False)
                 users[name] = conn
+                list_commands(conn)
+                list_users(conn)
                 broadcast(name, action="joins")
                 break
     thread.start_new_thread(threaded, ())
-
 
 def broadcast(name="", message=None, action=None):
     """
@@ -50,6 +51,24 @@ def broadcast(name="", message=None, action=None):
             except socket.error:
                 pass
 
+def quit(conn):
+    """
+    Disconnect a connection.
+    """
+    conn.close()
+
+def list_users(conn):
+    """
+    Send the list of users to a connection.
+    """
+    conn.send("Current users are: %s\n" % ", ".join(users.keys()))
+
+def list_commands(conn):
+    """
+    Send the list of commands to a connection.
+    """
+    conn.send("Available commands are: %s\n" % " ".join(commands.keys()))
+
 # Get host and port from command line arg.
 parser = optparse.OptionParser(usage="usage: %prog -b host:port")
 parser.add_option("-b", "--bind", dest="bind", help="Address for the "
@@ -65,7 +84,9 @@ except ValueError:
 
 # Mapping of commands.
 commands = {
-    "!quit": lambda conn: conn.close(),
+    "!quit": quit,
+    "!users": list_users,
+    "!commands": list_commands,
 }
 
 # Set up the server socket.
