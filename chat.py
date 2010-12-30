@@ -28,14 +28,22 @@ def accept(conn):
             elif name:
                 conn.setblocking(False)
                 users[name] = conn
-                broadcast(name, "+++ %s arrived +++" % name)
+                broadcast(name, action="joins")
                 break
     thread.start_new_thread(threaded)
 
-def broadcast(name, message):
+
+def broadcast(name="", message=None, action=None):
     """
-    Send a message to all users from the given name.
+    Send a message to all users from the given name. If no name specified, 
+    the message is from the server. If no message is specified and an action 
+    is given, use the action as the message without a colon prefix to 
+    signify it isn't a message.
     """
+    if message is None:
+        message = "%s %s" % (name, action)
+    else:
+        message = "%s: %s" % (name, message)
     print message
     for to_name, conn in users.items():
         if to_name != name:
@@ -43,6 +51,7 @@ def broadcast(name, message):
                 conn.send(message + "\n")
             except socket.error:
                 pass
+
 
 # Set up the server socket.
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -72,9 +81,10 @@ while True:
             if not message:
                 # Empty string is given on disconnect.
                 del users[name]
-                broadcast(name, "--- %s leaves ---" % name)
+                broadcast(name, action="leaves")
             else:
-                broadcast(name, "%s> %s" % (name, message.strip()))
+                broadcast(name, message.strip())
         time.sleep(.1)
     except (SystemExit, KeyboardInterrupt):
+        broadcast(action="shutting down")
         break
