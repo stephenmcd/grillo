@@ -6,7 +6,7 @@ from grillo import __version__
 
 setup(
 
-    name="chat",
+    name="Grillo",
     version=__version__,
     author="Stephen McDonald",
     author_email="stephen.mc@gmail.com",
@@ -15,7 +15,7 @@ setup(
     license="BSD",
     url="http://github.com/stephenmcd/grillo",
     zip_safe=False,
-    py_modules=["chat"],
+    py_modules=["grillo"],
 
     entry_points="""
         [console_scripts]

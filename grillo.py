@@ -8,6 +8,9 @@ import threading
 import time
 
 
+__version__ = "0.1"
+
+
 def nonblocking(func):
     """
     Decorator that runs the decorated func in a separate thread 
