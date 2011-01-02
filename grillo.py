@@ -275,9 +275,10 @@ def main():
     """
 
     # Get command line options.
-    parser = optparse.OptionParser(usage="usage: %prog [options]")
+    parser = optparse.OptionParser(usage="usage: %prog -b host:port [options]")
     parser.add_option("-b", "--bind", dest="bind", help="Address for the "
-                      "chat server to, in the format host:port")
+                      "Grillo server and/or client to use, in the format "
+                      "host:port")
     parser.add_option("-c", "--client-only", dest="client_only", 
                       action="store_true", default=False, 
                       help="Only run the client")
