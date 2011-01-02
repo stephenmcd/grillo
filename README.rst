@@ -48,5 +48,5 @@ modern systems can be used::
 
 .. _`chat server entry`: http://rosettacode.org/wiki/Chat_server#Python
 .. _`Rosetta Code Project`: http://rosettacode.org/
-.. _`Italian phone`: <http://en.wikipedia.org/wiki/Grillo_telephone>
+.. _`Italian phone`: http://en.wikipedia.org/wiki/Grillo_telephone
 .. _`setuptools`: http://pypi.python.org/pypi/setuptools
