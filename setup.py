@@ -1,7 +1,8 @@
 
 from setuptools import setup, find_packages
 
-from chat import __version__
+from grillo import __version__
+
 
 setup(
 
@@ -9,26 +10,28 @@ setup(
     version=__version__,
     author="Stephen McDonald",
     author_email="stephen.mc@gmail.com",
-    description="Terminal based chat server and client.",
+    description="A terminal based chat server and client.",
     long_description=open("README.rst").read(),
     license="BSD",
-    url="http://jupo.org/",
+    url="http://github.com/stephenmcd/grillo",
     zip_safe=False,
     py_modules=["chat"],
 
     entry_points="""
         [console_scripts]
-        chat=chat:main
+        grillo=grillo:main
     """,
 
     classifiers=[
         "Development Status :: 4 - Beta",
-        "Environment :: Web Environment",
+        "Environment :: Console",
         "Intended Audience :: Developers",
+        "Intended Audience :: End Users/Desktop",
         "License :: OSI Approved :: BSD License",
         "Operating System :: OS Independent",
         "Programming Language :: Python",
-        "Topic :: Software Development :: Libraries :: Python Modules",
+        "Topic :: Communications :: Chat",
+        "Topic :: Terminals :: Telnet",
     ]
 
 )
