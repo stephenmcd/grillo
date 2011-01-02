@@ -38,7 +38,7 @@ Usage
 Once installed, the command ``grillo`` should be available which can 
 be used for starting a server, client, or both at once (the default)::
 
-    $ chat --bind host:port [--server-only|--client-only]
+    $ grillo --bind host:port [--server-only|--client-only]
 
 Note that the Grillo does not need to be installed in order to 
 connect to a Grillo server, as the telnet command available on most 
