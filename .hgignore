@@ -1,0 +1,7 @@
+syntax: glob
+*.pyc
+*.pyo
+build/*
+dist/*
+Grillo.egg-info/*
+
