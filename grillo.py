@@ -134,10 +134,9 @@ class Server(StoppableThread):
     @nonblocking
     def accept(self, conn):
         """
-        Call the inner func in a thread so as not to block. Wait for a 
-        name to be entered from the given connection. Once a name is 
-        entered, set the connection to non-blocking and add the user to 
-        the users dict.
+        Wait for a name to be entered from the given connection. Once a 
+        name is entered, set the connection to non-blocking and add the 
+        user to the users dict.
         """
         while True:
             conn.send("Please enter your name: ")
